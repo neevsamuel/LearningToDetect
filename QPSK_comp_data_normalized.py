@@ -5,6 +5,7 @@ import time as tm
 import math
 import sys
 import pickle as pkl
+from copy import deepcopy
 
 
 
@@ -73,6 +74,22 @@ def sdr_ip(y,H):
         x=np.sign(X[range(K),-1]).T
     return (x)
 
+
+def batch_sdr(y,H,x,N,K):
+    B = np.shape(y)[0]
+    ber=0.0
+    for i in range(B):
+        xx = sdr_ip(np.reshape(y[i],(len(y[i]),1)),H[i])
+        xx_real = xx[0:K]
+        xx_imag = xx[K:2*K]
+        x_real = x[i][0:K]
+        x_imag = x[i][K:2*K]
+        ber+=np.mean(np.logical_or(np.not_equal(x_real,xx_real) , np.not_equal(x_imag,xx_imag)))
+
+    ber=ber*(1.0)/B
+    return np.float32(ber)
+
+
 def gaus(s,mean,var):
     s = np.array(s) 
     retval =np.exp(-0.5*np.real((s-mean)*np.conj(s-mean))/var**2)
@@ -94,7 +111,6 @@ def round1(s, K):
     retValIm   = np.sign(np.imag(s))
     return retValReal,retValIm
 
-
 def amp(y,H,N0,N,K):
     L = K
     beta = K/(0.+N)
@@ -105,7 +121,6 @@ def amp(y,H,N0,N,K):
 
         z = s+np.dot(np.conj(H.T),r)
         s = ampF(z,N0*(1+tau))
-	    #print s
         tau_new = (beta/N0)*np.mean(ampG(z,N0*(1+tau)))
         r = y - np.dot(H,s)+tau_new/(1+tau)*r
         tau = tau_new
@@ -121,13 +136,11 @@ def batch_amp(N,K,batch_Y,batch_H,batch_X,n0,B,SNR, x_R, x_I):
         err_amp+=(np.mean(np.logical_or(np.not_equal(x_R[i],retValReal) , np.not_equal(x_I[i],retValIm))))/(B)
     return err_amp
 
-
 ###start here
 sess = tf.InteractiveSession()
 
 K = 20
 N = 30
-train_iter = 2
 snrdb_low = 7.0
 snrdb_high = 14.0
 snr_low = 10.0 ** (snrdb_low/10.0)
@@ -137,9 +150,12 @@ res_alpha=0.9
 L=30
 v_size = 1*(2*K)
 hl_size = 4*(2*K)
-test_iter= 20
-test_batch_size=100
+
+train_iter = 2
 train_batch_iter = 3000  # train batch size
+
+test_iter= 50
+test_batch_size=2000
 num_snr = 6
 snrdb_low_test=8.0
 snrdb_high_test=13.0
@@ -171,30 +187,11 @@ print(num_snr)
 print(snrdb_low_test)
 print(snrdb_high_test)
 
-#  y = x*H' + w   H is NxK
-
-#def generate_data(B,K,N,snr_low,snr_high):
-#        X_=np.sign(np.random.randn(B,K))
-#        W_=np.random.randn(B,N)
-#        H_=np.random.randn(B,N,K)
-#        HH_=np.zeros((B,K,K))
-#        Y_=np.zeros((B,N))
-#        HY_=np.zeros((B,K))
-#        for b in range(B):
-#            nrm=np.trace(np.dot(H_[b].T,H_[b]))/K
-#            H_[b] = np.sqrt(np.random.uniform(low=snr_low,high=snr_high)/nrm)*H_[b]
-#            Y_[b] = np.dot(X_[b],H_[b].T) + W_[b]
-#            HY_[b] = np.dot(Y_[b],H_[b])
-#            HH_[b] = np.dot(H_[b].T,H_[b])
-#        return Y_,H_,HY_,HH_,X_
 
 def generate_data_iid_test(B,K,N,snr_low,snr_high):
     H_R = np.random.randn(B,N,K)
     H_I = np.random.randn(B,N,K)
     H_  = np.zeros([B,2*N,2*K])
-
-    #W_R = np.zeros([B,K,K])
-    #W_I = np.zeros([B,K,K])
 
     x_R = np.sign(np.random.rand(B,K) - 0.5)
     x_I = np.sign(np.random.rand(B,K) - 0.5)
@@ -235,14 +232,10 @@ def generate_data_iid_test(B,K,N,snr_low,snr_high):
     return y_,H_,Hy_,HH_,x_,SNR_, H_R, H_I, x_R, x_I, w_R, w_I, x_ind
 
 
-
 def generate_data_train(B,K,N,snr_low,snr_high):
     H_R = np.random.randn(B,N,K)
     H_I = np.random.randn(B,N,K)
     H_  = np.zeros([B,2*N,2*K])
-
-    #W_R = np.zeros([B,K,K])
-    #W_I = np.zeros([B,K,K])
 
     x_R = np.sign(np.random.rand(B,K) - 0.5)
     x_I = np.sign(np.random.rand(B,K) - 0.5)
@@ -306,21 +299,6 @@ def batch_dfe(y,H,x,N,K):
     return np.float32(ber)
 
 
-def batch_sdr(y,H,x,N,K):
-    B = np.shape(y)[0]
-    ber=0.0
-    for i in range(B):
-        xx = sdr_ip(np.reshape(y[i],(len(y[i]),1)),H[i])
-        xx_real = xx[0:K]
-        xx_imag = xx[K:2*K]
-        x_real = x[i][0:K]
-        x_imag = x[i][K:2*K]
-
-    ber+=np.mean(np.logical_or(np.not_equal(x_real,xx_real) , np.not_equal(x_imag,xx_imag)))
-
-    ber=ber/B
-    return np.float32(ber)
-
 
 def piecewise_linear_soft_sign(x):
     t = tf.Variable(0.1)
@@ -330,10 +308,6 @@ def piecewise_linear_soft_sign(x):
 def affine_layer(x,input_size,output_size,Layer_num):
     W = tf.Variable(tf.random_normal([input_size, output_size], stddev=0.01))
     w = tf.Variable(tf.random_normal([1, output_size], stddev=0.01))
-    #with tf.variable_scope('layer'+Layer_num):
-    #    W = tf.get_variable('W', shape=[input_size, output_size], initializer=tf.contrib.layers.xavier_initializer())
-    # 	print W.name
-    #   w = tf.get_variable('w', shape=[1, output_size], initializer=tf.contrib.layers.xavier_initializer())
     y = tf.matmul(x, W)+w
     return y
 
@@ -342,10 +316,8 @@ def relu_layer(x,input_size,output_size,Layer_num):
     return y
 
 def sign_layer(x,input_size,output_size,Layer_num):
-    #y = piecewise_linear_soft_sign(affine_layer(x,input_size,output_size,Layer_num))
     y = affine_layer(x,input_size,output_size,Layer_num)
     return y
-
 
 HY = tf.placeholder(tf.float32,shape=[None,2*K])
 X = tf.placeholder(tf.float32,shape=[None,2*K])
@@ -353,12 +325,6 @@ HH = tf.placeholder(tf.float32,shape=[None, 2*K , 2*K])
 X_IND = tf.placeholder(tf.float32,shape=[None, K , 4])
 batch_size = tf.shape(HY)[0]
 
-#HY = tf.reshape(HY1,[batch_size,K])
-#X = tf.reshape(X1,[batch_size,K])
-#HH = tf.reshape(HH1,[batch_size,K,K])
-
-print HH
-#dHH,uHH=tf.self_adjoint_eig(HH)
 
 X_LS = tf.matmul(tf.expand_dims(HY,1),tf.matrix_inverse(HH))
 X_LS= tf.squeeze(X_LS,1)
@@ -368,20 +334,8 @@ xLS_imag = tf.sign(X_LS)[:,K:2*K]
 x_real = X[:,0:K]
 x_imag = X[:,K:2*K]
 
-
 loss_LS = tf.reduce_mean(tf.square(X - X_LS))
-#ber_LS = tf.reduce_mean(tf.cast(tf.not_equal(X,tf.sign(X_LS)), tf.float32))
 ber_LS =  tf.reduce_mean(tf.cast(tf.logical_or(tf.not_equal(x_real,xLS_real) , tf.not_equal(x_imag,xLS_imag)), tf.float32))
-
-
-
-prefix='train_iid_test_top_055'
-toptz='055'
-#randomSTR = str(np.random.randint(100000))
-filenamemat = 'toplitz'+toptz+'.csv'
-#print filenamemat
-#H_Const = np.genfromtxt(filenamemat, dtype=None, delimiter=',')
-#print H_Const
 
 S1=[]
 S1.append(tf.zeros([batch_size,2*K]))
@@ -401,12 +355,10 @@ for i in range(1,L):
     Z1 = S1[-1] - delta[(i-1) * 2]*HY + delta[(i-1) * 2 + 1]*temp1
     Z = tf.concat([Z1, V[-1]], 1)
     ZZ = relu_layer(Z,(2*K) + v_size , hl_size,'relu'+str(i))
-    #ZZ1 = relu_layer(Z,3*K + v_size , hl_size*2,'relu&1'+str(i))
-    #ZZ = relu_layer(ZZ1,hl_size*2 , hl_size,'relu&2'+str(i))
+
     S2.append(sign_layer(ZZ , hl_size , 4*K,'sign'+str(i)))
     S2[i]=(1-res_alpha)*S2[i]+res_alpha*S2[i-1]
     S2[i] = tf.clip_by_value(S2[i],0,1)
-    #S2[i] =    tf.clip_by_value(S2[i],0,1)
     V.append(affine_layer(ZZ , hl_size , v_size,'aff'+str(i)))
     V[i]=(1-res_alpha)*V[i]+res_alpha*V[i-1]
     
@@ -429,50 +381,33 @@ for i in range(1,L):
     
     x_ind_reshaped = tf.reshape(X_IND,[batch_size,4*K])
     LOSS.append(np.log(i)*tf.reduce_mean(tf.reduce_mean(tf.square(x_ind_reshaped - S2[-1]),1)))
-    #LOSS.append(tf.reduce_mean(tf.reduce_mean(tf.square(X - S[-1]),1)/tf.reduce_mean(tf.square(X - X_LS),1)))
-    #BER.append(tf.reduce_mean(tf.cast(tf.not_equal(X,tf.sign(S[-1])), tf.float32)))
     BER.append(tf.reduce_mean(tf.cast(tf.logical_or(tf.not_equal(x_real,tf.sign(S1[-1][:,0:K])),tf.not_equal(x_imag,tf.sign(S1[-1][:,K:2*K]))), tf.float32)))
 Max_Val = tf.reduce_max(S3,axis=2, keep_dims=True)
 Greater = tf.greater_equal(S3,Max_Val)
 BER2 = tf.round(tf.cast(Greater,tf.float32))
-
-#BER2 = tf.round(S3)
-
 BER3 = tf.not_equal(BER2, X_IND)
 BER4 = tf.reduce_sum(tf.cast(BER3,tf.float32),2)
 BER5 = tf.cast(tf.greater(BER4,0),tf.float32)
 SER =  tf.reduce_mean(BER5)    
 TOTAL_LOSS=tf.add_n(LOSS)
-#TOTAL_LOSS = LOSS[-1]
 
 saver = tf.train.Saver()
 
 global_step = tf.Variable(0, trainable=False)
 learning_rate = tf.train.exponential_decay(startingLearningRate, global_step, decay_step, decay_factor, staircase=True)
 train_step = tf.train.AdamOptimizer(learning_rate).minimize(TOTAL_LOSS)
-#train_step = tf.train.AdamOptimizer().minimize(TOTAL_LOSS)
 init_op=tf.global_variables_initializer()
 
-#TOTAL_LOSS = tf.Print(TOTAL_LOSS, [TOTAL_LOSS], message="this is LOSS")
-
-V = tf.Print(V, [V], message="this is V")
-Z = tf.Print(Z, [Z], message="this is Z")
-TOTAL_LOSS = tf.Print(TOTAL_LOSS, [TOTAL_LOSS], message="this is TOTAL_LOSS")
 last_ber = 1.0
 
 train_flag = True
-#train_flag = False
-
 
 if train_flag:
     sess.run(init_op)
     for i in range(train_iter): #num of train iter
-
         batch_Y, batch_H, batch_HY, batch_HH, batch_X , SNR1 , H_R, H_I, x_R, x_I, w_R, w_I,x_ind= generate_data_train(train_batch_iter,K,N,snr_low,snr_high)
         train_step.run(feed_dict={HY: batch_HY, HH: batch_HH, X: batch_X,X_IND:x_ind})
 
-
-	
         if i % 1000== 0 :
 	    TOTAL_LOSS.eval(feed_dict={
                 HY: batch_HY, HH: batch_HH, X: batch_X,X_IND:x_ind}
@@ -481,18 +416,10 @@ if train_flag:
             results = sess.run([loss_LS,LOSS[L-1],ber_LS,BER[L-1]], {HY: batch_HY, HH: batch_HH, X: batch_X,X_IND:x_ind})
             print_string = [i]+results
             print ' '.join('%s' % x for x in print_string)
-            sys.stderr.write(str(i)+' ')
-            with open('err_gd'+prefix+toptz+'.txt',"a") as f:
-                f.write(' '.join('%s' % x for x in print_string)+'\n')             
+            sys.stderr.write(str(i)+' ')          
 	    if sess.run(tf.logical_or(tf.less(last_ber, 0.2*results[3]) , math.isnan(results[1])),{HY: batch_HY, HH: batch_HH, X: batch_X,X_IND:x_ind}) :
 	        print 'restore model!'
 	    last_ber=results[3] * 1.0
-    save_path = saver.save(sess, './model.ckpt')
-
-
-
-#sess.run(init_op)
-#saver.restore(sess, './model.ckpt')
 
 bers = np.zeros((5,num_snr))
 times = np.zeros((5,num_snr))
@@ -504,40 +431,33 @@ for j in range(num_snr):
 
     for jj in range(test_iter):
 
-    	print('snr_num:')
-    	print(j)
-    	print(jj)
-
-    	batch_Y, batch_H, batch_HY, batch_HH, batch_X ,SNR1, H_R, H_I, x_R, x_I, w_R, w_I,x_ind= generate_data_iid_test(test_batch_size,K,N,snr_list[j],snr_list[j])
-
-    	tic = tm.time()
-    	results = sess.run([loss_LS,LOSS[L-1],ber_LS,BER[L-1]], {HY: batch_HY, HH: batch_HH, X: batch_X,X_IND:x_ind})
-        #ber_LS = tf.cast(np.mean(np.logical_or(np.not_equal(x_real, xLS_real), np.not_equal(x_imag, xLS_imag))),
-        #                 tf.float32)
+        print('snr_num:')
+        print(j)
+        print(jj)
+        batch_Y, batch_H, batch_HY, batch_HH, batch_X ,SNR1, H_R, H_I, x_R, x_I, w_R, w_I,x_ind= generate_data_iid_test(test_batch_size,K,N,snr_list[j],snr_list[j])
+        tic = tm.time()
 
         tmp_ber_iter[:,jj] = np.array(sess.run(BER, {HY: batch_HY, HH: batch_HH, X: batch_X,X_IND:x_ind}))
-    	results.append(batch_dfe(batch_Y,batch_H,batch_X,N,K))
-    	toc = tm.time()
-	tmp_times[2][jj] =toc - tic
+        toc = tm.time()
+        tmp_times[2][jj] =toc - tic
     	
-	tic = tm.time()
-    	tmp_bers[1][jj]=batch_dfe(batch_Y,batch_H,batch_X,N,K)
-    	toc = tm.time()
-	tmp_times[1][jj] = toc - tic
+        tic = tm.time()
+        tmp_bers[1][jj]=batch_dfe(batch_Y,batch_H,batch_X,N,K)
+        toc = tm.time()
+        tmp_times[1][jj] = toc - tic
 
-    	tmp_bers[0][jj]=results[2]
-    	tmp_bers[2][jj]=results[3]
-    	tic = tm.time()
-    	tmp_bers[3][jj]=batch_sdr(batch_Y,batch_H,batch_X,N,K)
-    	toc = tm.time()
-    	tmp_times[3][jj] = toc - tic
+        tmp_bers[2][jj]=results[3]
+        tic = tm.time()
+        	#tmp_bers[3][jj]=batch_sdr(batch_Y,batch_H,batch_X,N,K)
+        toc = tm.time()
+        tmp_times[3][jj] = toc - tic
 
-    	tic = tm.time()
-	n0 = 0.35
+        tic = tm.time()
+        n0 = 0.29
 
-	tmp_bers[4][jj] = batch_amp(N,K,batch_Y,batch_H,batch_X,n0,test_batch_size,SNR1, x_R, x_I)
-    	toc = tm.time()
-    	tmp_times[4][jj] = toc - tic
+        tmp_bers[4][jj] = batch_amp(N,K,batch_Y,batch_H,batch_X,n0,test_batch_size,SNR1, x_R, x_I)
+        toc = tm.time()
+        tmp_times[4][jj] = toc - tic
 
     bers[0][j] = np.mean(tmp_bers[0])
     bers[1][j] = np.mean(tmp_bers[1])
@@ -550,12 +470,159 @@ for j in range(num_snr):
     times[4][j] = np.mean(tmp_times[4])/test_batch_size
     ber_iter[:,j]=np.mean(tmp_ber_iter,1)
 
-
-
-
 print('snrdb_list')
 print(snrdb_list)
 print('bers')
 print(bers)
 print('times')
 print(times)
+
+
+def CreateData(K, N, SNR, B):
+    H_R = np.random.randn(B,K,N)
+    H_I = np.random.randn(B,K,N)
+    H_  = np.zeros([B,2*K,2*N])
+    
+    w_R = np.random.randn(B,N)
+    w_I = np.random.randn(B,N)
+    w   = np.concatenate((w_R , w_I) , axis = 1)
+    
+    x_R = np.sign(np.random.rand(B,K) - 0.5)
+    x_I = np.sign(np.random.rand(B,K) - 0.5)
+    x_  = np.concatenate((x_R , x_I) , axis = 1)  
+    
+    y_ = np.zeros([B, 2*N])
+    SNR_= np.zeros([B])
+    Hy_ = np.zeros([B,2*K])
+    HH_ = np.zeros([B,2*K,2*K])
+
+
+    for i in range(B):
+        SNR = np.random.uniform(low=SNR, high=SNR)
+        H = H   = np.concatenate((np.concatenate((H_R[i,:,:], -1*H_I[i,:,:]), axis=1) , np.concatenate((H_I[i,:,:] , H_R[i,:,:]), axis=1) ), axis=0)
+        tmp_snr=(H.T.dot(H)).trace()/(2*K)
+        H = H / np.sqrt(tmp_snr) * np.sqrt(SNR)
+        H_[i,:, :] = H
+        y_[i, :] = x_[i, :].dot(H)+ w[i, :]
+
+        SNR_[i] = SNR
+    return  y_,H_,x_,SNR_, x_R, x_I
+
+
+
+def sphdec_core(z, R, symbset, layer,dist):
+    global SPHDEC_RADIUS
+    global RETVAL
+    global TMPVAL
+    global SYMBSETSIZE
+    global SEARCHFLAG
+    if (layer == 0):
+        for ii in range(SYMBSETSIZE):
+            TMPVAL[0] = deepcopy(symbset[ii])
+            #print('R')
+            #print(R)
+            #print('TMPVAL')
+            #print(TMPVAL)
+            d = np.power(np.abs(z[0] - np.dot(R[0,:],TMPVAL)) , 2) + dist
+            if (d <= SPHDEC_RADIUS):
+                RETVAL = deepcopy(TMPVAL)
+                SPHDEC_RADIUS = deepcopy(d)
+
+                SEARCHFLAG = SEARCHFLAG + 1
+    else:
+        for jj in range(SYMBSETSIZE):
+            TMPVAL[layer] = deepcopy(symbset[jj])
+            #print('R')
+            #print(R)
+            #print('TMPVAL')
+            #print(TMPVAL)
+            d = np.power(np.abs(z[layer] - np.dot(R[layer][layer:] ,TMPVAL[layer:])),2) + dist
+            if (d <= SPHDEC_RADIUS):
+                sphdec_core(z, R, symbset, layer-1, d)
+
+
+def sphdec(H, y, symbset, radius):
+    global RETVAL
+    global TMPVAL
+    global SYMBSETSIZE
+    global SEARCHFLAG
+    global SPHDEC_RADIUS
+
+    Q,R = np.linalg.qr(H,mode='complete')
+
+    z = np.dot(np.transpose(Q),y)
+
+    K = np.shape(H)[1]
+
+    RETVAL = np.zeros((K, 1))
+    TMPVAL = np.zeros((K, 1))
+    SYMBSETSIZE = len(symbset)
+    SEARCHFLAG = 0
+    SPHDEC_RADIUS= radius
+
+    sphdec_core(z, R, symbset, K-1, 0)
+
+    if SEARCHFLAG > 0:
+        r = RETVAL
+    else:
+        r = np.zeros((K, 1))
+        sys.stderr.write('SD did not find a solution')
+
+    return r
+
+
+print('Sphere Decoding')
+
+test_iter= [2000,3000,5000,10000,18000,30000]
+num_snr = 6
+snrdb_low_test=8.0
+snrdb_high_test=13.0
+snrdb_list = np.linspace(snrdb_low_test,snrdb_high_test,num_snr)
+snr_list = 10.0 ** (snrdb_list/10.0)
+constallation = [-1,1]
+
+
+max_radius=np.round(N*(2)*1.5)
+
+for i in range(6):
+    max_radius = max_radius*1.2
+    SERS = np.zeros([num_snr,1])
+    Times = np.zeros([num_snr,1])
+    for j in range(num_snr):
+        temp_noises = np.zeros([test_iter[j],1])
+        temp_ser = 0
+        batch_Y, batch_H, batch_X,SNR , x_R, x_I= CreateData(K, N, snr_list[j], test_iter[j])
+        for jj in range(test_iter[j]):
+            if jj%1000 ==0:
+                print(jj)
+            tic = tm.time()
+            xx = sphdec(np.transpose(batch_H[jj]),batch_Y[jj],constallation,max_radius)
+            xx=np.squeeze(xx)
+
+            xx_real = xx[0:K]
+
+            xx_imag = xx[K:2*K]
+            x_real = batch_X[jj][0:K]
+
+            x_imag = batch_X[jj][K:2*K]
+
+            temp_ser+=np.mean(np.logical_or(np.not_equal(x_real,xx_real) , np.not_equal(x_imag,xx_imag)))
+            toc = tm.time()
+            #print(xx)
+            #print(batch_X[jj])
+            temp_noises[jj] = toc-tic
+
+            #print(temp_ber)
+        Times[j] = np.mean(temp_noises)
+        temp_ser  = temp_ser/(1.0 * test_iter[j])
+        SERS[j] = temp_ser
+    print('i')
+    print(i)
+    print('max_radius')
+    print(max_radius)
+    print('SERS')
+    print(SERS)
+    print('Times')
+    print(Times)
+
+

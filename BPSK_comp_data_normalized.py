@@ -393,16 +393,8 @@ batch_size = np.shape(batch_HY)[0]
 X_LS_comp = np.matmul(np.expand_dims(batch_HY,1),np.linalg.inv(batch_HH))
 X_LS_comp= np.squeeze(X_LS_comp,1)
 loss_LS_comp = np.mean(np.square(batch_X - X_LS_comp))
-#print('ls comp')
-#print(np.sign(X_LS_comp))
-#print('batch_X')
-#print(batch_X)
-#print("not equal")
-#print(np.not_equal(batch_X,np.sign(X_LS_comp)))
 
-#print(np.not_equal(batch_X,np.sign(X_LS_comp)).astype(np.float32))
 ber_LS_comp = np.mean(np.not_equal(batch_X,np.sign(X_LS_comp)).astype(np.float32))
-#print(ber_LS_comp)
 
 print("tf ber at ls is:")
 print(np.array(sess.run(ber_LS, {HY: batch_HY, HH: batch_HH, X: batch_X, X_IND:x_ind}))    )
@@ -422,76 +414,7 @@ W3 = sess.run(W33)
 w3 = sess.run(w33)
 
 
-S1_comp=[]
-S1_comp.append(np.zeros([batch_size,K]))
-S2_comp=[]
-S2_comp.append(np.zeros([batch_size,2*K]))
-V_comp=[]
-V_comp.append(np.zeros([batch_size,v_size]))
-LOSS_comp=[]
-LOSS_comp.append(np.zeros([]))
-BER_comp=[]
-BER_comp.append(np.zeros([]))
-tic = tm.time()
-#for i in range(0,L-1):
-#    print("layer")
-#    print(i)
-#    temp1_comp = np.matmul(np.expand_dims(S1_comp[i], 1), batch_HH)
-#    temp1_comp = np.squeeze(temp1_comp, 1)
-#
-#
-#
-#
-#    Z_comp = np.concatenate((batch_HY, S1_comp[-1], temp1_comp, V_comp[-1]), 1)
-#
-#
-#    y_temp = np.matmul(Z_comp, W1[i]) + w1[i]
-#    ZZ_comp = np.maximum(0 , y_temp)
-#
-#    y_temp = np.matmul(ZZ_comp , W2[i]) + w2[i]
-#
-#    S2_comp.append(y_temp)
-#
-#    S2_comp[i+1]=(1-res_alpha)*S2_comp[i+1]+res_alpha*S2_comp[i]
-#    S2_comp[i+1] =  np.clip(S2_comp[i+1], 0, 1)
-#
-#    y_temp = np.matmul(ZZ_comp, W3[i]) + w3[i]
-#
-#    V_comp.append(y_temp)
-#    V_comp[i+1] = (1 - res_alpha) * V_comp[i+1] + res_alpha * V_comp[i]
-#
-#    S3_comp = np.reshape(S2_comp[i],[batch_size,K,2])
-#    
-#
-#    temp_0_comp = S3_comp[:,:,0]
-#    temp_1_comp = S3_comp[:,:,1]
-#    
-#    temp_2_comp = 1*temp_0_comp + (-1)*temp_1_comp
-#    S1_comp.append(temp_2_comp)
-#    X_IND_reshaped_comp = np.reshape(x_ind,[batch_size,2*K])
-#    LOSS_comp.append(np.log(i)*np.mean(np.mean(np.square(X_IND_reshaped_comp - S2_comp[-1]),1)))
-#    BER_comp.append(np.mean(np.not_equal(batch_X,np.sign(S1_comp[-1])).astype(np.float32)))
-#
-#
-#BER2_comp = np.round(S3_comp)
-#BER3_comp = np.not_equal(BER2_comp, x_ind)
-#BER4_comp = np.sum(BER3_comp.astype(np.float32),2)
-#BER5_comp = np.greater(BER4_comp.astype(np.float32),0)
-#SER_comp =  np.mean(BER5_comp)    
-#
-toc = tm.time()
-time_np = (toc-tic)/test_batch_size
-print('time np')
-print(time_np)
 
-
-
-print("tf ser at layer is:")
-print(np.array(sess.run(SER, {HY: batch_HY, HH: batch_HH, X: batch_X, X_IND:x_ind},))    )
-#print(np.array(sess.run(S[1], {HY: batch_HY, HH: batch_HH, X: batch_X}))    )
-#print("np ser is:")
-#print(SER_comp)
-#print(S_comp[1])
 
 #Testing the trained model
 snrdb_list = np.linspace(snrdb_low_test,snrdb_high_test,num_snr)
@@ -555,8 +478,7 @@ print('bers')
 print(bers)
 print('times')
 print(times)
-print('time np')
-print(time_np)
+
 
 import numpy as np
 from copy import deepcopy
@@ -590,10 +512,6 @@ def sphdec_core(z, R, symbset, layer,dist):
     if (layer == 0):
         for ii in range(SYMBSETSIZE):
             TMPVAL[0] = deepcopy(symbset[ii])
-            #print('R')
-            #print(R)
-            #print('TMPVAL')
-            #print(TMPVAL)
             d = np.power(np.abs(z[0] - np.dot(R[0,:],TMPVAL)) , 2) + dist
             if (d <= SPHDEC_RADIUS):
                 RETVAL = deepcopy(TMPVAL)
@@ -603,10 +521,6 @@ def sphdec_core(z, R, symbset, layer,dist):
     else:
         for jj in range(SYMBSETSIZE):
             TMPVAL[layer] = deepcopy(symbset[jj])
-            #print('R')
-            #print(R)
-            #print('TMPVAL')
-            #print(TMPVAL)
             d = np.power(np.abs(z[layer] - np.dot(R[layer][layer:] ,TMPVAL[layer:])),2) + dist
             if (d <= SPHDEC_RADIUS):
                 sphdec_core(z, R, symbset, layer-1, d)
@@ -630,14 +544,11 @@ def sphdec(H, y, symbset, radius):
     SYMBSETSIZE = len(symbset)
     SEARCHFLAG = 0
     SPHDEC_RADIUS= radius
-
     sphdec_core(z, R, symbset, K-1, 0)
-
     if SEARCHFLAG > 0:
         r = RETVAL
     else:
         r = 0
-
     return r
 
 print('Sphere Decoding')
@@ -650,8 +561,7 @@ snrdb_list = np.linspace(snrdb_low_test,snrdb_high_test,num_snr)
 snr_list = 10.0 ** (snrdb_list/10.0)
 constallation = [-1,1]
 
-
-max_radius=40
+max_radius=np.round(N*1.5)
 
 for i in range(6):
     max_radius = max_radius*1.2
@@ -665,12 +575,10 @@ for i in range(6):
             tic = tm.time()
             xx = sphdec(np.transpose(batch_H[jj]),batch_Y[jj],constallation,max_radius)
             toc = tm.time()
-            #print(xx)
-            #print(batch_X[jj])
+
             temp_noises[jj] = toc-tic
             temp_ber = temp_ber +np.sum(np.not_equal(np.transpose(xx),batch_X[jj]))
 
-            #print(temp_ber)
         Times[j] = np.mean(temp_noises)
         temp_ber  = temp_ber/(1.0*K * test_iter[j])
         BERS[j] = temp_ber
