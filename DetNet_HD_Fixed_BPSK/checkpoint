@@ -1,0 +1,2 @@
+model_checkpoint_path: "BPSK_HD_Fixed_model.ckpt"
+all_model_checkpoint_paths: "BPSK_HD_Fixed_model.ckpt"
