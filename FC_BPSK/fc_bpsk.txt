@@ -1,0 +1,132 @@
+fully connected
+30
+60
+1000
+200
+1000000
+8.0
+13.0
+6
+step 0, training accuracy 25947.6
+step 10000, training accuracy 433.626
+step 20000, training accuracy 408.452
+step 30000, training accuracy 375.094
+step 40000, training accuracy 378.435
+step 50000, training accuracy 351.656
+step 60000, training accuracy 353.658
+step 70000, training accuracy 366.338
+step 80000, training accuracy 328.78
+step 90000, training accuracy 361.454
+step 100000, training accuracy 324.615
+step 110000, training accuracy 311.111
+step 120000, training accuracy 276.667
+step 130000, training accuracy 304.72
+step 140000, training accuracy 334.249
+step 150000, training accuracy 252.283
+step 160000, training accuracy 244.124
+step 170000, training accuracy 258.049
+step 180000, training accuracy 222.976
+step 190000, training accuracy 226.481
+step 200000, training accuracy 245.976
+step 210000, training accuracy 211.521
+step 220000, training accuracy 195.613
+step 230000, training accuracy 182.284
+step 240000, training accuracy 159.996
+step 250000, training accuracy 171.022
+step 260000, training accuracy 175.4
+step 270000, training accuracy 186.125
+step 280000, training accuracy 220.82
+step 290000, training accuracy 149.99
+step 300000, training accuracy 211.347
+step 310000, training accuracy 218.796
+step 320000, training accuracy 186.974
+step 330000, training accuracy 172.775
+step 340000, training accuracy 166.956
+step 350000, training accuracy 159.348
+step 360000, training accuracy 171.348
+step 370000, training accuracy 153.996
+step 380000, training accuracy 175.608
+step 390000, training accuracy 167.988
+step 400000, training accuracy 176.167
+step 410000, training accuracy 139.487
+step 420000, training accuracy 176.414
+step 430000, training accuracy 147.35
+step 440000, training accuracy 150.26
+step 450000, training accuracy 158.923
+step 460000, training accuracy 135.698
+step 470000, training accuracy 175.674
+step 480000, training accuracy 161.572
+step 490000, training accuracy 149.704
+step 500000, training accuracy 146.921
+step 510000, training accuracy 176.557
+step 520000, training accuracy 177.292
+step 530000, training accuracy 134.746
+step 540000, training accuracy 168.595
+step 550000, training accuracy 168.082
+step 560000, training accuracy 153.033
+step 570000, training accuracy 170.951
+step 580000, training accuracy 112.565
+step 590000, training accuracy 138.865
+step 600000, training accuracy 116.731
+step 610000, training accuracy 121.445
+step 620000, training accuracy 170.793
+step 630000, training accuracy 181.02
+step 640000, training accuracy 132.02
+step 650000, training accuracy 165.371
+step 660000, training accuracy 138.175
+step 670000, training accuracy 158.81
+step 680000, training accuracy 129.237
+step 690000, training accuracy 136.854
+step 700000, training accuracy 162.852
+step 710000, training accuracy 156.533
+step 720000, training accuracy 158.968
+step 730000, training accuracy 148.176
+step 740000, training accuracy 114.727
+step 750000, training accuracy 141.168
+step 760000, training accuracy 154.159
+step 770000, training accuracy 132.845
+step 780000, training accuracy 117.852
+step 790000, training accuracy 173.289
+step 800000, training accuracy 204.744
+step 810000, training accuracy 145.933
+step 820000, training accuracy 147.514
+step 830000, training accuracy 155.665
+step 840000, training accuracy 134.227
+step 850000, training accuracy 143.248
+step 860000, training accuracy 127.924
+step 870000, training accuracy 138.835
+step 880000, training accuracy 134.84
+step 890000, training accuracy 136.174
+step 900000, training accuracy 152.214
+step 910000, training accuracy 164.187
+step 920000, training accuracy 147.14
+step 930000, training accuracy 165.51
+step 940000, training accuracy 149.507
+step 950000, training accuracy 144.476
+step 960000, training accuracy 146.745
+step 970000, training accuracy 154.664
+step 980000, training accuracy 111.693
+step 990000, training accuracy 151.647
+cur snr
+6.3095734448
+test accuracy 29512
+cur snr
+7.94328234724
+test accuracy 29785
+cur snr
+10.0
+test accuracy 29929
+cur snr
+12.5892541179
+test accuracy 29977
+cur snr
+15.8489319246
+test accuracy 30000
+cur snr
+19.9526231497
+test accuracy 30000
+times are
+[[1.05509818e-05]]
+ans is:
+[[1.47196667e-02 6.67516667e-03 2.43116667e-03 7.02000000e-04
+  1.48500000e-04 2.40000000e-05]]
