@@ -263,7 +263,7 @@ def generate_data_iid_test(B,K,N,snr_low,snr_high):
         H = np.concatenate((np.concatenate((H_R[i, :, :], -1 * H_I[i, :, :]), axis=1),
                             np.concatenate((H_I[i, :, :], H_R[i, :, :]), axis=1)), axis=0)
         tmp_snr = (H.T.dot(H)).trace() / (2 * K)
-        H = H / np.sqrt(tmp_snr) * np.sqrt(SNR)
+        H = H #/ np.sqrt(tmp_snr) * np.sqrt(SNR)
         H_[i, :, :] = H
         y_[i,:] = x_[i,:].dot(H) + w[i,:]*np.sqrt(tmp_snr) / np.sqrt(SNR)
         Hy_[i, :] = H.dot(y_[i, :])
@@ -340,7 +340,7 @@ def SD(L,z,symbols,K,M):
 K = 4
 N = 8
 M = 7
-test_iter= 150
+test_iter= 5
 print('K')
 print(K)
 print('N')
